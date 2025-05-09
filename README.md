@@ -28,7 +28,7 @@ A professional GUI application that integrates Analytic Hierarchy Process (AHP) 
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/ahp-topsis.git
+git clone https://github.com/OzdemirTarik/ahp-topsis.git
 cd ahp-topsis
 ```
 
