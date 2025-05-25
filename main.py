@@ -558,13 +558,22 @@ class AHPTOPSISApp(QMainWindow):
             # Calculate TOPSIS scores and rankings
             scores, rankings = self.topsis.rank_alternatives(matrix, self.criteria_weights, benefit_criteria)
             
+            # Create a DataFrame for easier sorting and display
+            results_df = pd.DataFrame({
+                'Alternative': [self.perf_table.item(i, 0).text() for i in range(n_rows)],
+                'Score': scores,
+                'Rank': rankings
+            })
+            
+            # Sort by Rank
+            results_df = results_df.sort_values(by='Rank').reset_index(drop=True)
+            
             # Update rankings table
             self.rankings_table.setRowCount(n_rows)
-            for i in range(n_rows):
-                alt_name = self.perf_table.item(i, 0).text()
-                self.rankings_table.setItem(i, 0, QTableWidgetItem(alt_name))
-                self.rankings_table.setItem(i, 1, QTableWidgetItem(f"{scores[i]:.4f}"))
-                self.rankings_table.setItem(i, 2, QTableWidgetItem(str(rankings[i])))
+            for i, row in results_df.iterrows():
+                self.rankings_table.setItem(i, 0, QTableWidgetItem(str(row['Alternative'])))
+                self.rankings_table.setItem(i, 1, QTableWidgetItem(f"{row['Score']:.4f}"))
+                self.rankings_table.setItem(i, 2, QTableWidgetItem(str(row['Rank'])))
             
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to calculate rankings: {str(e)}")
