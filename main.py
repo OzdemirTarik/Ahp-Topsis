@@ -24,6 +24,7 @@ class AHPTOPSISApp(QMainWindow):
         self.ahp = AHP()
         self.topsis = TOPSIS()
         self.criteria_weights = None
+        self.criteria_names = []
         self.init_ui()
         
     def init_ui(self):
@@ -301,57 +302,79 @@ class AHPTOPSISApp(QMainWindow):
         
     def update_criteria_matrix(self):
         n = self.criteria_spin.value()
+        current_criteria_count = len(self.criteria_names)
         
-        # Update criteria names input
-        self.clear_layout(self.criteria_names_layout)
-        self.criteria_names = []
-        
-        # Kriterleri QGridLayout'e ekle, her satırda en fazla 5 kriter (10 widget)
-        # Her kriter bir etiket ve bir giriş alanından oluşur.
-        # (Etiket, Giriş) (Etiket, Giriş) ... şeklinde gidecek.
-        # Maksimum 10 widget (5 kriter) bir satırda olabilir.
-        # 0,0 0,1 | 0,2 0,3 | 0,4 0,5 | 0,6 0,7 | 0,8 0,9  -> 5 kriter (10 widget)
-        # 1,0 1,1 | 1,2 1,3 | ... -> sonraki 5 kriter
-        
-        num_columns_per_criterion_pair = 2 # Her (Etiket, Giriş) çifti için 2 sütun
+        # Constants for layout
+        num_columns_per_criterion_pair = 2
         max_criteria_per_row = 5
-        max_widgets_per_row = max_criteria_per_row * num_columns_per_criterion_pair # 10
-        
-        current_row = 0
-        current_col = 0
-        
-        for i in range(n):
-            if current_col >= max_widgets_per_row:
-                current_row += 1
-                current_col = 0
-            
-            label = QLabel(f"C{i+1}:") # Daha kısa etiketler
-            self.criteria_names_layout.addWidget(label, current_row, current_col)
-            current_col += 1
-            
-            name_input = QLineEdit(f"Criteria {i+1}")
-            name_input.setMinimumWidth(100) # Genişliği biraz azalttım, daha fazla sığması için
-            self.criteria_names.append(name_input)
-            self.criteria_names_layout.addWidget(name_input, current_row, current_col)
-            current_col += 1
-        
+        max_widgets_per_row = max_criteria_per_row * num_columns_per_criterion_pair
+
+        # Update criteria names input
+        if n < current_criteria_count:
+            # Remove excess widgets
+            for i in range(current_criteria_count - 1, n - 1, -1):
+                # Calculate position in grid
+                row = i // max_criteria_per_row
+                col_base = (i % max_criteria_per_row) * num_columns_per_criterion_pair
+
+                # Remove name_input widget
+                input_widget_item = self.criteria_names_layout.itemAtPosition(row, col_base + 1)
+                if input_widget_item:
+                    widget = input_widget_item.widget()
+                    if widget:
+                        self.criteria_names_layout.removeWidget(widget)
+                        widget.deleteLater()
+                
+                # Remove label widget
+                label_widget_item = self.criteria_names_layout.itemAtPosition(row, col_base)
+                if label_widget_item:
+                    widget = label_widget_item.widget()
+                    if widget:
+                        self.criteria_names_layout.removeWidget(widget)
+                        widget.deleteLater()
+            self.criteria_names = self.criteria_names[:n]
+        elif n > current_criteria_count:
+            # Add new widgets
+            for i in range(current_criteria_count, n):
+                current_row = i // max_criteria_per_row
+                current_col_base = (i % max_criteria_per_row) * num_columns_per_criterion_pair
+                
+                label = QLabel(f"C{i+1}:")
+                self.criteria_names_layout.addWidget(label, current_row, current_col_base)
+                
+                name_input = QLineEdit(f"Criteria {i+1}")
+                name_input.setMinimumWidth(100)
+                self.criteria_names.append(name_input)
+                self.criteria_names_layout.addWidget(name_input, current_row, current_col_base + 1)
+
         # Update matrix table
+        # Block signals during bulk update to prevent premature ahp result calculation
+        self.matrix_table.blockSignals(True)
+        
         self.matrix_table.setRowCount(n)
         self.matrix_table.setColumnCount(n)
         
-        # Set headers
         headers = [f"C{i+1}" for i in range(n)]
         self.matrix_table.setHorizontalHeaderLabels(headers)
         self.matrix_table.setVerticalHeaderLabels(headers)
         
-        # Initialize matrix with 1s on diagonal
         for i in range(n):
             for j in range(n):
+                item = self.matrix_table.item(i, j)
+                if not item:
+                    item = QTableWidgetItem()
+                    self.matrix_table.setItem(i, j, item)
+                
                 if i == j:
-                    self.matrix_table.setItem(i, j, QTableWidgetItem("1"))
+                    item.setText("1")
                 else:
-                    self.matrix_table.setItem(i, j, QTableWidgetItem(""))
+                    # Only set to empty if it's a new cell beyond the previous count
+                    # or if it was already empty. This preserves user data.
+                    if (i >= current_criteria_count or j >= current_criteria_count) and not item.text():
+                         item.setText("")
         
+        self.matrix_table.blockSignals(False)
+
         # Hücre boyutlarını güncelle
         self.matrix_table.horizontalHeader().setDefaultSectionSize(80)
         self.matrix_table.verticalHeader().setDefaultSectionSize(40)
