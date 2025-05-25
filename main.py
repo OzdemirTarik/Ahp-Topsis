@@ -31,10 +31,10 @@ class AHPTOPSISApp(QMainWindow):
         self.setWindowIcon(QIcon('beher.svg'))
 
         # Ana monitörün geometrisini al ve pencereyi oraya yerleştir
-        screen = QApplication.primaryScreen()
-        geometry = screen.geometry()
-        self.setGeometry(geometry)
-        self.show()  # Pencereyi göster
+        # screen = QApplication.primaryScreen()
+        # geometry = screen.geometry()
+        # self.setGeometry(geometry)
+        # self.show()  # Pencereyi göster - showMaximized ile değiştirilecek
         
         # Create main widget and layout
         main_widget = QWidget()
@@ -295,6 +295,9 @@ class AHPTOPSISApp(QMainWindow):
         topsis_layout.addWidget(topsis_splitter)
         
         tabs.addTab(topsis_tab, "TOPSIS")
+        
+        # Tüm UI elemanları ayarlandıktan sonra pencereyi maksimize et
+        self.showMaximized() 
         
     def update_criteria_matrix(self):
         n = self.criteria_spin.value()
