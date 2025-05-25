@@ -5,8 +5,6 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.chart import BarChart, Reference
 from openpyxl.drawing.image import Image
-import matplotlib.pyplot as plt
-import io
 
 class ReportExporter:
     def __init__(self):

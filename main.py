@@ -64,13 +64,13 @@ class AHPTOPSISApp(QMainWindow):
         criteria_layout = QHBoxLayout()
         criteria_layout.addWidget(QLabel("Number of Criteria:"))
         self.criteria_spin = QSpinBox()
-        self.criteria_spin.setRange(2, 10)
+        self.criteria_spin.setRange(2, 20)
         self.criteria_spin.valueChanged.connect(self.update_criteria_matrix)
         criteria_layout.addWidget(self.criteria_spin)
         hierarchy_layout.addLayout(criteria_layout)
         
         # Criteria names input
-        self.criteria_names_layout = QHBoxLayout()
+        self.criteria_names_layout = QGridLayout()
         hierarchy_layout.addLayout(self.criteria_names_layout)
         
         hierarchy_group.setLayout(hierarchy_layout)
@@ -80,18 +80,28 @@ class AHPTOPSISApp(QMainWindow):
         matrix_group = QGroupBox("Pairwise Comparison Matrix")
         matrix_layout = QVBoxLayout()
         
+        # Import button for comparison matrix
+        import_comparison_btn = QPushButton("Import Comparison Matrix (CSV)")
+        import_comparison_btn.clicked.connect(self.import_comparison_matrix)
+        matrix_layout.addWidget(import_comparison_btn)
+        
         # Matrix table with size policy
         self.matrix_table = QTableWidget()
         self.matrix_table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.matrix_table.setMinimumHeight(400)
-        self.matrix_table.setMinimumWidth(600)
         self.matrix_table.cellChanged.connect(self.update_ahp_results)
         
         # Hücre boyutlarını ayarla
         self.matrix_table.horizontalHeader().setDefaultSectionSize(80)
         self.matrix_table.verticalHeader().setDefaultSectionSize(40)
         
-        matrix_layout.addWidget(self.matrix_table)
+        # QScrollArea oluştur ve matrix_table'ı içine ata
+        scroll_area = QScrollArea()
+        scroll_area.setWidget(self.matrix_table)
+        scroll_area.setWidgetResizable(True) # Bu önemli!
+        scroll_area.setMinimumHeight(400) # ScrollArea için minimum yükseklik
+        # scroll_area.setMinimumWidth(600) # Genişlik splitter tarafından yönetilebilir
+
+        matrix_layout.addWidget(scroll_area) # matrix_table yerine scroll_area'yı ekle
         matrix_group.setLayout(matrix_layout)
         left_splitter.addWidget(matrix_group)
         left_splitter.setSizes([1, 3])
@@ -188,7 +198,15 @@ class AHPTOPSISApp(QMainWindow):
         
         # Performance matrix table
         self.perf_matrix_table = QTableWidget()
-        matrix_creation_layout.addWidget(self.perf_matrix_table)
+        # self.perf_matrix_table.setMinimumHeight(200) # Örnek, QScrollArea yönetecek
+        # self.perf_matrix_table.setMinimumWidth(400)  # Örnek, QScrollArea yönetecek
+
+        scroll_area_perf_matrix = QScrollArea()
+        scroll_area_perf_matrix.setWidget(self.perf_matrix_table)
+        scroll_area_perf_matrix.setWidgetResizable(True)
+        scroll_area_perf_matrix.setMinimumHeight(250) # ScrollArea için minimum yükseklik
+
+        matrix_creation_layout.addWidget(scroll_area_perf_matrix)
         
         # Create matrix button
         create_matrix_btn = QPushButton("Create Matrix")
@@ -219,11 +237,32 @@ class AHPTOPSISApp(QMainWindow):
         
         # Performance matrix table
         self.perf_table = QTableWidget()
-        perf_layout.addWidget(self.perf_table)
+        # self.perf_table.setMinimumHeight(300) # QScrollArea yönetecek
+        # self.perf_table.setMinimumWidth(500)  # QScrollArea yönetecek
+
+        scroll_area_perf_table = QScrollArea()
+        scroll_area_perf_table.setWidget(self.perf_table)
+        scroll_area_perf_table.setWidgetResizable(True)
+        scroll_area_perf_table.setMinimumHeight(300) # ScrollArea için minimum yükseklik
+
+        perf_layout.addWidget(scroll_area_perf_table)
         
-        # Benefit/Cost criteria selection
-        self.benefit_criteria_layout = QHBoxLayout()
-        perf_layout.addLayout(self.benefit_criteria_layout)
+        # Benefit/Cost criteria selection - Yeniden düzenleniyor
+        benefit_cost_group = QGroupBox("Benefit/Cost Specification")
+        benefit_cost_group_layout = QVBoxLayout()
+
+        scroll_area_benefit_cost = QScrollArea()
+        scroll_area_benefit_cost.setWidgetResizable(True)
+        
+        benefit_criteria_widget = QWidget() # ScrollArea için içerik widget'ı
+        self.benefit_criteria_grid_layout = QGridLayout(benefit_criteria_widget) # Bu layout'u kullanacağız
+
+        scroll_area_benefit_cost.setWidget(benefit_criteria_widget)
+        
+        benefit_cost_group_layout.addWidget(scroll_area_benefit_cost)
+        benefit_cost_group.setLayout(benefit_cost_group_layout)
+        
+        perf_layout.addWidget(benefit_cost_group) # Eski benefit_criteria_layout yerine bunu ekle
         
         perf_group.setLayout(perf_layout)
         
@@ -235,7 +274,14 @@ class AHPTOPSISApp(QMainWindow):
         self.rankings_table = QTableWidget()
         self.rankings_table.setColumnCount(3)
         self.rankings_table.setHorizontalHeaderLabels(["Alternative", "Score", "Rank"])
-        topsis_results_layout.addWidget(self.rankings_table)
+        # self.rankings_table.setMinimumHeight(200) # QScrollArea yönetecek
+
+        scroll_area_rankings_table = QScrollArea()
+        scroll_area_rankings_table.setWidget(self.rankings_table)
+        scroll_area_rankings_table.setWidgetResizable(True)
+        scroll_area_rankings_table.setMinimumHeight(200) # ScrollArea için minimum yükseklik
+
+        topsis_results_layout.addWidget(scroll_area_rankings_table)
         
         topsis_results_group.setLayout(topsis_results_layout)
         
@@ -255,13 +301,35 @@ class AHPTOPSISApp(QMainWindow):
         # Update criteria names input
         self.clear_layout(self.criteria_names_layout)
         self.criteria_names = []
+        
+        # Kriterleri QGridLayout'e ekle, her satırda en fazla 5 kriter (10 widget)
+        # Her kriter bir etiket ve bir giriş alanından oluşur.
+        # (Etiket, Giriş) (Etiket, Giriş) ... şeklinde gidecek.
+        # Maksimum 10 widget (5 kriter) bir satırda olabilir.
+        # 0,0 0,1 | 0,2 0,3 | 0,4 0,5 | 0,6 0,7 | 0,8 0,9  -> 5 kriter (10 widget)
+        # 1,0 1,1 | 1,2 1,3 | ... -> sonraki 5 kriter
+        
+        num_columns_per_criterion_pair = 2 # Her (Etiket, Giriş) çifti için 2 sütun
+        max_criteria_per_row = 5
+        max_widgets_per_row = max_criteria_per_row * num_columns_per_criterion_pair # 10
+        
+        current_row = 0
+        current_col = 0
+        
         for i in range(n):
-            label = QLabel(f"Criteria {i+1}:")
-            self.criteria_names_layout.addWidget(label)
+            if current_col >= max_widgets_per_row:
+                current_row += 1
+                current_col = 0
+            
+            label = QLabel(f"C{i+1}:") # Daha kısa etiketler
+            self.criteria_names_layout.addWidget(label, current_row, current_col)
+            current_col += 1
+            
             name_input = QLineEdit(f"Criteria {i+1}")
-            name_input.setMinimumWidth(150)
+            name_input.setMinimumWidth(100) # Genişliği biraz azalttım, daha fazla sığması için
             self.criteria_names.append(name_input)
-            self.criteria_names_layout.addWidget(name_input)
+            self.criteria_names_layout.addWidget(name_input, current_row, current_col)
+            current_col += 1
         
         # Update matrix table
         self.matrix_table.setRowCount(n)
@@ -384,15 +452,31 @@ class AHPTOPSISApp(QMainWindow):
                         self.perf_table.setItem(i, j + 1, QTableWidgetItem("0"))
             
             # Update benefit/cost criteria selection
-            self.clear_layout(self.benefit_criteria_layout)
-            self.benefit_criteria = []
+            self.clear_layout(self.benefit_criteria_grid_layout) # Yeni grid layout'u temizle
+            self.benefit_criteria = [] # Bu liste QCheckBox'ları tutacak
+            
+            # Kriterleri QGridLayout'e ekle (Etiket, CheckBox)
+            num_columns_per_item = 2 # Her (Etiket, CheckBox) çifti için 2 sütun
+            max_items_per_row = 4    # Her satırda en fazla 4 kriter (8 widget)
+            max_widgets_per_row = max_items_per_row * num_columns_per_item
+            
+            current_row = 0
+            current_col = 0
+
             for name in crit_names:
+                if current_col >= max_widgets_per_row:
+                    current_row += 1
+                    current_col = 0
+
                 label = QLabel(f"{name}:")
-                self.benefit_criteria_layout.addWidget(label)
+                self.benefit_criteria_grid_layout.addWidget(label, current_row, current_col)
+                current_col += 1
+
                 checkbox = QCheckBox("Benefit")
                 checkbox.setChecked(True)  # Default to benefit criteria
                 self.benefit_criteria.append(checkbox)
-                self.benefit_criteria_layout.addWidget(checkbox)
+                self.benefit_criteria_grid_layout.addWidget(checkbox, current_row, current_col)
+                current_col += 1
             
             QMessageBox.information(self, "Success", "Performance matrix created successfully!")
             
@@ -413,15 +497,34 @@ class AHPTOPSISApp(QMainWindow):
                         self.perf_table.setItem(i, j, QTableWidgetItem(str(df.iloc[i, j])))
                 
                 # Update benefit/cost criteria selection
-                self.clear_layout(self.benefit_criteria_layout)
-                self.benefit_criteria = []
-                for col in df.columns[1:]:  # Skip first column (alternatives)
-                    label = QLabel(f"{col}:")
-                    self.benefit_criteria_layout.addWidget(label)
+                self.clear_layout(self.benefit_criteria_grid_layout) # Yeni grid layout'u temizle
+                self.benefit_criteria = [] # Bu liste QCheckBox'ları tutacak
+                
+                # Kriterleri QGridLayout'e ekle (Etiket, CheckBox)
+                num_columns_per_item = 2 # Her (Etiket, CheckBox) çifti için 2 sütun
+                max_items_per_row = 4    # Her satırda en fazla 4 kriter (8 widget)
+                max_widgets_per_row = max_items_per_row * num_columns_per_item
+
+                current_row = 0
+                current_col = 0
+
+                # df.columns[0] alternatif isimleri, df.columns[1:] kriter isimleri
+                imported_crit_names = df.columns[1:] 
+
+                for col_name in imported_crit_names:
+                    if current_col >= max_widgets_per_row:
+                        current_row += 1
+                        current_col = 0
+
+                    label = QLabel(f"{col_name}:")
+                    self.benefit_criteria_grid_layout.addWidget(label, current_row, current_col)
+                    current_col += 1
+                    
                     checkbox = QCheckBox("Benefit")
                     checkbox.setChecked(True)  # Default to benefit criteria
                     self.benefit_criteria.append(checkbox)
-                    self.benefit_criteria_layout.addWidget(checkbox)
+                    self.benefit_criteria_grid_layout.addWidget(checkbox, current_row, current_col)
+                    current_col += 1
                 
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to import CSV: {str(e)}")
@@ -485,7 +588,7 @@ class AHPTOPSISApp(QMainWindow):
     
     def export_full_report(self):
         """Export complete AHP-TOPSIS analysis to Excel"""
-        if not self.criteria_weights is not None:
+        if self.criteria_weights is None:
             QMessageBox.warning(self, "Error", "Please complete AHP analysis first")
             return
             
@@ -541,6 +644,47 @@ class AHPTOPSISApp(QMainWindow):
             item = layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
+
+    def import_comparison_matrix(self):
+        n_criteria = self.criteria_spin.value()
+        if n_criteria <= 0:
+            QMessageBox.warning(self, "Error", "Please set the number of criteria first.")
+            return
+
+        file_name, _ = QFileDialog.getOpenFileName(self, "Import AHP Comparison Matrix", "", "CSV Files (*.csv)")
+        if file_name:
+            try:
+                df = pd.read_csv(file_name, header=None) # Karşılaştırma matrislerinde genellikle başlık olmaz
+                
+                if df.shape[0] != n_criteria or df.shape[1] != n_criteria:
+                    QMessageBox.critical(self, "Error", 
+                                         f"Matrix dimensions in CSV ({df.shape[0]}x{df.shape[1]}) \
+                                         do not match the number of criteria ({n_criteria}).")
+                    return
+
+                # Matris tablosunu güncellemeden önce cellChanged sinyalini geçici olarak keselim
+                self.matrix_table.blockSignals(True)
+
+                for i in range(n_criteria):
+                    for j in range(n_criteria):
+                        value = df.iloc[i, j]
+                        # Köşegen değerlerinin 1 olduğundan emin olalım (isteğe bağlı, CSV'ye güveniyorsak)
+                        if i == j and float(value) != 1.0:
+                           # QMessageBox.warning(self, "Warning", f"Diagonal element at ({i+1},{j+1}) is not 1. Setting to 1.")
+                           # self.matrix_table.setItem(i, j, QTableWidgetItem("1"))
+                           # continue # ya da CSV'deki değeri kullan
+                           pass # Şimdilik CSV'deki değeri doğrudan kullan, kullanıcıya bırak
+                        
+                        self.matrix_table.setItem(i, j, QTableWidgetItem(str(value)))
+                
+                # Sinyalleri tekrar bağla ve AHP sonuçlarını güncelle
+                self.matrix_table.blockSignals(False)
+                self.update_ahp_results() # Matris güncellendiği için sonuçları yeniden hesapla
+                QMessageBox.information(self, "Success", "Comparison matrix imported successfully!")
+
+            except Exception as e:
+                self.matrix_table.blockSignals(False) # Hata durumunda sinyalleri açmayı unutma
+                QMessageBox.critical(self, "Error", f"Failed to import comparison matrix: {str(e)}")
 
 def main():
     app = QApplication(sys.argv)

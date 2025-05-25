@@ -45,16 +45,10 @@ class TOPSIS:
             - Ideal solution
             - Negative-ideal solution
         """
-        ideal = np.zeros(len(benefit_criteria))
-        negative_ideal = np.zeros(len(benefit_criteria))
+        benefit_criteria = np.array(benefit_criteria)
         
-        for i, is_benefit in enumerate(benefit_criteria):
-            if is_benefit:
-                ideal[i] = np.max(weighted_matrix[:, i])
-                negative_ideal[i] = np.min(weighted_matrix[:, i])
-            else:
-                ideal[i] = np.min(weighted_matrix[:, i])
-                negative_ideal[i] = np.max(weighted_matrix[:, i])
+        ideal = np.where(benefit_criteria, np.max(weighted_matrix, axis=0), np.min(weighted_matrix, axis=0))
+        negative_ideal = np.where(benefit_criteria, np.min(weighted_matrix, axis=0), np.max(weighted_matrix, axis=0))
                 
         return ideal, negative_ideal
     
