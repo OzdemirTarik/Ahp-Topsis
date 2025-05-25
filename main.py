@@ -204,7 +204,7 @@ class AHPTOPSISApp(QMainWindow):
         scroll_area_perf_matrix = QScrollArea()
         scroll_area_perf_matrix.setWidget(self.perf_matrix_table)
         scroll_area_perf_matrix.setWidgetResizable(True)
-        scroll_area_perf_matrix.setMinimumHeight(250) # ScrollArea için minimum yükseklik
+        # scroll_area_perf_matrix.setMinimumHeight(250) # QSplitter esnekliği için kaldırıldı
 
         matrix_creation_layout.addWidget(scroll_area_perf_matrix)
         
@@ -243,7 +243,7 @@ class AHPTOPSISApp(QMainWindow):
         scroll_area_perf_table = QScrollArea()
         scroll_area_perf_table.setWidget(self.perf_table)
         scroll_area_perf_table.setWidgetResizable(True)
-        scroll_area_perf_table.setMinimumHeight(300) # ScrollArea için minimum yükseklik
+        # scroll_area_perf_table.setMinimumHeight(300) # QSplitter esnekliği için kaldırıldı
 
         perf_layout.addWidget(scroll_area_perf_table)
         
@@ -253,6 +253,7 @@ class AHPTOPSISApp(QMainWindow):
 
         scroll_area_benefit_cost = QScrollArea()
         scroll_area_benefit_cost.setWidgetResizable(True)
+        # scroll_area_benefit_cost.setMinimumHeight(150) # Örnek, QSplitter esnekliği için kaldırıldı veya daha küçük bir değere ayarlandı
         
         benefit_criteria_widget = QWidget() # ScrollArea için içerik widget'ı
         self.benefit_criteria_grid_layout = QGridLayout(benefit_criteria_widget) # Bu layout'u kullanacağız
@@ -279,7 +280,7 @@ class AHPTOPSISApp(QMainWindow):
         scroll_area_rankings_table = QScrollArea()
         scroll_area_rankings_table.setWidget(self.rankings_table)
         scroll_area_rankings_table.setWidgetResizable(True)
-        scroll_area_rankings_table.setMinimumHeight(200) # ScrollArea için minimum yükseklik
+        # scroll_area_rankings_table.setMinimumHeight(200) # QSplitter esnekliği için kaldırıldı
 
         topsis_results_layout.addWidget(scroll_area_rankings_table)
         
