@@ -28,7 +28,7 @@ class AHPTOPSISApp(QMainWindow):
         
     def init_ui(self):
         self.setWindowTitle('AHP-TOPSIS Decision Support System')
-        self.setWindowIcon(QIcon('beher.svg'))
+        self.setWindowIcon(QIcon('science.svg'))
 
         # Ana monitörün geometrisini al ve pencereyi oraya yerleştir
         # screen = QApplication.primaryScreen()
