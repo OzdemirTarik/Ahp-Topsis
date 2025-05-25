@@ -160,8 +160,16 @@ class AHPTOPSISApp(QMainWindow):
         topsis_layout = QVBoxLayout(topsis_tab)
         
         # Matrix Creation Section
-        matrix_creation_group = QGroupBox("Create Performance Matrix")
-        matrix_creation_layout = QVBoxLayout()
+        self.matrix_creation_group = QGroupBox("Create Performance Matrix")
+        self.matrix_creation_group.setCheckable(True)
+        self.matrix_creation_group.setChecked(False)
+
+        # Main layout for the QGroupBox itself. This layout will hold the content_widget.
+        matrix_creation_group_main_layout = QVBoxLayout(self.matrix_creation_group)
+
+        # Content widget that will be toggled
+        self.matrix_creation_content_widget = QWidget()
+        matrix_creation_actual_content_layout = QVBoxLayout(self.matrix_creation_content_widget)
         
         # Matrix size inputs
         size_layout = QHBoxLayout()
@@ -177,7 +185,7 @@ class AHPTOPSISApp(QMainWindow):
         self.crit_spin.valueChanged.connect(self.update_performance_matrix)
         size_layout.addWidget(self.crit_spin)
         
-        matrix_creation_layout.addLayout(size_layout)
+        matrix_creation_actual_content_layout.addLayout(size_layout)
         
         # Alternative names input
         alt_names_layout = QHBoxLayout()
@@ -186,7 +194,7 @@ class AHPTOPSISApp(QMainWindow):
         self.alt_names_input.setPlaceholderText("Enter names separated by commas (e.g., Alt1, Alt2, Alt3)")
         self.alt_names_input.textChanged.connect(self.update_alternative_names)
         alt_names_layout.addWidget(self.alt_names_input)
-        matrix_creation_layout.addLayout(alt_names_layout)
+        matrix_creation_actual_content_layout.addLayout(alt_names_layout)
         
         # Criteria names input
         crit_names_layout = QHBoxLayout()
@@ -195,7 +203,7 @@ class AHPTOPSISApp(QMainWindow):
         self.crit_names_input.setPlaceholderText("Enter names separated by commas (e.g., Cost, Quality, Time)")
         self.crit_names_input.textChanged.connect(self.update_criteria_names)
         crit_names_layout.addWidget(self.crit_names_input)
-        matrix_creation_layout.addLayout(crit_names_layout)
+        matrix_creation_actual_content_layout.addLayout(crit_names_layout)
         
         # Performance matrix table
         self.perf_matrix_table = QTableWidget()
@@ -207,14 +215,18 @@ class AHPTOPSISApp(QMainWindow):
         scroll_area_perf_matrix.setWidgetResizable(True)
         # scroll_area_perf_matrix.setMinimumHeight(250) # QSplitter esnekliği için kaldırıldı
 
-        matrix_creation_layout.addWidget(scroll_area_perf_matrix)
+        matrix_creation_actual_content_layout.addWidget(scroll_area_perf_matrix)
         
         # Create matrix button
         create_matrix_btn = QPushButton("Create Matrix")
         create_matrix_btn.clicked.connect(self.create_performance_matrix)
-        matrix_creation_layout.addWidget(create_matrix_btn)
+        matrix_creation_actual_content_layout.addWidget(create_matrix_btn)
         
-        matrix_creation_group.setLayout(matrix_creation_layout)
+        # Add the content widget (which contains all the above) to the group box's main layout
+        matrix_creation_group_main_layout.addWidget(self.matrix_creation_content_widget)
+        self.matrix_creation_content_widget.setVisible(False)
+
+        self.matrix_creation_group.toggled.connect(self.toggle_matrix_creation_content)
         
         # Performance matrix section
         perf_group = QGroupBox("Performance Matrix")
@@ -224,16 +236,10 @@ class AHPTOPSISApp(QMainWindow):
         button_layout = QHBoxLayout()
         import_btn = QPushButton("Import CSV")
         import_btn.clicked.connect(self.import_performance_matrix)
-        export_btn = QPushButton("Export Results")
-        export_btn.clicked.connect(self.export_results)
-        calculate_btn = QPushButton("Calculate Rankings")
-        calculate_btn.clicked.connect(self.calculate_topsis)
-        export_report_btn = QPushButton("Export Full Report")
-        export_report_btn.clicked.connect(self.export_full_report)
+        self.export_report_btn = QPushButton("Export Full Excel Report")
+        self.export_report_btn.clicked.connect(self.export_full_report)
         button_layout.addWidget(import_btn)
-        button_layout.addWidget(export_btn)
-        button_layout.addWidget(calculate_btn)
-        button_layout.addWidget(export_report_btn)
+        # button_layout.addWidget(self.export_report_btn) # Removed from this layout
         perf_layout.addLayout(button_layout)
         
         # Performance matrix table
@@ -272,6 +278,9 @@ class AHPTOPSISApp(QMainWindow):
         topsis_results_group = QGroupBox("TOPSIS Results")
         topsis_results_layout = QVBoxLayout()
         
+        # Add a QHBoxLayout for the table and the button
+        topsis_results_content_layout = QHBoxLayout()
+
         # Rankings table
         self.rankings_table = QTableWidget()
         self.rankings_table.setColumnCount(3)
@@ -283,13 +292,35 @@ class AHPTOPSISApp(QMainWindow):
         scroll_area_rankings_table.setWidgetResizable(True)
         # scroll_area_rankings_table.setMinimumHeight(200) # QSplitter esnekliği için kaldırıldı
 
-        topsis_results_layout.addWidget(scroll_area_rankings_table)
+        topsis_results_content_layout.addWidget(scroll_area_rankings_table) # Add table to the new HBox
+
+        # Calculate button for TOPSIS results
+        self.calculate_topsis_results_btn = QPushButton("Calculate Rankings")
+        self.calculate_topsis_results_btn.clicked.connect(self.calculate_topsis)
+        
+        # Add a spacer to push the buttons to the right
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        topsis_results_content_layout.addWidget(spacer) # Spacer is added first
+
+        # Size and add export_report_btn
+        # self.export_report_btn was made an instance variable earlier in init_ui()
+        export_btn_current_size = self.export_report_btn.sizeHint()
+        self.export_report_btn.setFixedSize(export_btn_current_size.width() + 10, export_btn_current_size.height() + 10)
+        topsis_results_content_layout.addWidget(self.export_report_btn) # Add export button
+
+        # Size and add calculate_topsis_results_btn
+        calc_btn_current_size = self.calculate_topsis_results_btn.sizeHint()
+        self.calculate_topsis_results_btn.setFixedSize(calc_btn_current_size.width() + 10, calc_btn_current_size.height() + 10)
+        topsis_results_content_layout.addWidget(self.calculate_topsis_results_btn) # Add calculate button
+        
+        topsis_results_layout.addLayout(topsis_results_content_layout) # Add HBox to the main VBox of the group
         
         topsis_results_group.setLayout(topsis_results_layout)
         
         # TOPSIS ana bölümlerini QSplitter ile ayır
         topsis_splitter = QSplitter(Qt.Orientation.Vertical)
-        topsis_splitter.addWidget(matrix_creation_group)
+        topsis_splitter.addWidget(self.matrix_creation_group)
         topsis_splitter.addWidget(perf_group)
         topsis_splitter.addWidget(topsis_results_group)
         topsis_splitter.setSizes([1, 2, 1])
@@ -299,6 +330,9 @@ class AHPTOPSISApp(QMainWindow):
         
         # Tüm UI elemanları ayarlandıktan sonra pencereyi maksimize et
         self.showMaximized() 
+        
+    def toggle_matrix_creation_content(self, checked):
+        self.matrix_creation_content_widget.setVisible(checked)
         
     def update_criteria_matrix(self):
         n = self.criteria_spin.value()
@@ -600,27 +634,6 @@ class AHPTOPSISApp(QMainWindow):
             
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to calculate rankings: {str(e)}")
-    
-    def export_results(self):
-        file_name, _ = QFileDialog.getSaveFileName(self, "Export Results", "", "CSV Files (*.csv)")
-        if file_name:
-            try:
-                # Get data from rankings table
-                data = []
-                for row in range(self.rankings_table.rowCount()):
-                    row_data = []
-                    for col in range(self.rankings_table.columnCount()):
-                        item = self.rankings_table.item(row, col)
-                        row_data.append(item.text() if item else "")
-                    data.append(row_data)
-                
-                # Create DataFrame and save to CSV
-                df = pd.DataFrame(data, columns=["Alternative", "Score", "Rank"])
-                df.to_csv(file_name, index=False)
-                QMessageBox.information(self, "Success", "Results exported successfully!")
-                
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to export results: {str(e)}")
     
     def export_full_report(self):
         """Export complete AHP-TOPSIS analysis to Excel"""
